@@ -53,3 +53,39 @@ class CategoryParse(EDostavkaParseBase):
             'name': [lable.find('input').get('name') for lable in raw_data],
             'value': [lable.find('input').get('value') for lable in raw_data]
         }
+
+
+class ItemsParse(EDostavkaParseBase):
+    def __init__(self, start_url: str, search_item: str, rubric_name: str, rubric_value: str) -> None:
+        super().__init__(start_url=start_url,
+                         params={
+                             'searchtext': search_item,
+                             rubric_name: rubric_value
+                         })
+
+        self.tasks = [
+            self.get_task(self.start_url, self.items_parse)
+        ]
+
+    def run(self) -> dict:
+        return self.tasks[0]()
+
+    def __item_parse(self, item: bs4.element.Tag) -> dict:
+        return {
+            'title': item.find('div', {'class': 'title'}).find('a').text.split(',')[0],
+            'price': item.find('div', {'class': 'price'}).text.strip(),
+            'image': item.find('div', {'class': 'img'}).find('img').get('src')
+        }
+
+    def items_parse(self, url, soup):
+        products = soup.find_all('div', {'class': 'products_card'})
+        return [self.__item_parse(product) for product in products]
+
+
+if __name__ == "__main__":
+    ItemsParse(
+        start_url='https://e-dostavka.by/search',
+        search_item='яблоко',
+        rubric_name='rubric_filter[7998]',
+        rubric_value='7998'
+    ).run()
